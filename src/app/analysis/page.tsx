@@ -20,6 +20,7 @@ export default function AnalysisPage() {
     start: '',
     end: '',
   });
+  const [analysisTarget, setAnalysisTarget] = useState<'自分' | '相手'>('自分');
 
   useEffect(() => {
     const loadRecords = () => {
@@ -55,17 +56,18 @@ export default function AnalysisPage() {
     }
 
     setFilteredRecords(filtered);
-  }, [records, analysisPeriod, matchTypeFilter, customDateRange]);
+  }, [records, analysisPeriod, matchTypeFilter, customDateRange, analysisTarget]);
+
+  // 集計対象をanalysisTargetで切り替え
+  const targetTechniques = filteredRecords.flatMap(record => record.techniques.filter(t => t.actor === analysisTarget));
 
   // 技の得点割合を計算（円グラフ用）
   const calculateTechniqueScoreDistribution = () => {
     const scoreDistribution: { [key: string]: number } = {};
     
-    filteredRecords.forEach(record => {
-      record.techniques.forEach(technique => {
-        const key = `${technique.technique} - ${technique.area}`;
-        scoreDistribution[key] = (scoreDistribution[key] || 0) + technique.point;
-      });
+    targetTechniques.forEach(technique => {
+      const key = `${technique.technique} - ${technique.area}`;
+      scoreDistribution[key] = (scoreDistribution[key] || 0) + technique.point;
     });
 
     const labels = Object.keys(scoreDistribution);
@@ -96,11 +98,9 @@ export default function AnalysisPage() {
   // 技の使用頻度を計算
   const calculateTechniqueFrequency = () => {
     const frequency: { [key: string]: number } = {};
-    filteredRecords.forEach(record => {
-      record.techniques.forEach(technique => {
-        const key = `${technique.technique}${technique.subTechnique ? ` (${technique.subTechnique})` : ''} - ${technique.area}`;
-        frequency[key] = (frequency[key] || 0) + 1;
-      });
+    targetTechniques.forEach(technique => {
+      const key = `${technique.technique}${technique.subTechnique ? ` (${technique.subTechnique})` : ''} - ${technique.area}`;
+      frequency[key] = (frequency[key] || 0) + 1;
     });
 
     return Object.entries(frequency)
@@ -114,14 +114,14 @@ export default function AnalysisPage() {
       category1: 0,
       category2: 0,
     };
-
     filteredRecords.forEach(record => {
       record.penalties.forEach(penalty => {
-        if (penalty.category === 'カテゴリ1') penalties.category1++;
-        if (penalty.category === 'カテゴリ2') penalties.category2++;
+        if (penalty.actor === analysisTarget) {
+          if (penalty.category === 'C1') penalties.category1++;
+          if (penalty.category === 'C2') penalties.category2++;
+        }
       });
     });
-
     const totalMatches = filteredRecords.length;
     return {
       category1: totalMatches ? (penalties.category1 / totalMatches).toFixed(2) : 0,
@@ -167,7 +167,7 @@ export default function AnalysisPage() {
       {/* フィルター */}
       <div className="glass-card p-6">
         <h3 className="text-xl font-semibold mb-4">分析条件</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">期間</label>
             <select
@@ -180,7 +180,6 @@ export default function AnalysisPage() {
               <option value="custom">期間指定</option>
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">試合種別</label>
             <select
@@ -191,6 +190,17 @@ export default function AnalysisPage() {
               <option value="all">すべて</option>
               <option value="練習">練習</option>
               <option value="大会">大会</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">分析対象</label>
+            <select
+              className="select-field"
+              value={analysisTarget}
+              onChange={(e) => setAnalysisTarget(e.target.value as '自分' | '相手')}
+            >
+              <option value="自分">自分データ</option>
+              <option value="相手">相手データ</option>
             </select>
           </div>
 
@@ -248,12 +258,12 @@ export default function AnalysisPage() {
         <h3 className="text-xl font-semibold mb-4">反則傾向（1試合平均）</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="penalty-card text-center">
-            <h4 className="font-medium text-yellow-800 mb-2">カテゴリ1</h4>
+            <h4 className="font-medium text-yellow-800 mb-2">C1</h4>
             <p className="text-3xl font-bold text-yellow-600">{calculatePenaltyTrend().category1}</p>
             <p className="text-sm text-yellow-700">回/試合</p>
           </div>
           <div className="penalty-card text-center">
-            <h4 className="font-medium text-orange-800 mb-2">カテゴリ2</h4>
+            <h4 className="font-medium text-orange-800 mb-2">C2</h4>
             <p className="text-3xl font-bold text-orange-600">{calculatePenaltyTrend().category2}</p>
             <p className="text-sm text-orange-700">回/試合</p>
           </div>

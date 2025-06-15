@@ -5,6 +5,11 @@ import Layout from '@/components/Layout'
 export const metadata: Metadata = {
   title: '空手道 試合記録・分析ツール',
   description: '全空連ルール準拠の空手道試合記録・分析ツール',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
@@ -15,7 +20,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="icon" href="favicon.ico" />
       </head>
       <body>
         <Layout>

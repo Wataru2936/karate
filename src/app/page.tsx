@@ -45,6 +45,7 @@ export default function HomePage() {
 
   const menuItems = [
     { href: '/record', label: '試合記録', icon: FaClipboardList, color: 'from-blue-500 to-blue-600' },
+    { href: '/records', label: '試合一覧', icon: FaClipboardList, color: 'from-yellow-500 to-yellow-600' },
     { href: '/analysis', label: '試合分析', icon: FaChartBar, color: 'from-purple-500 to-purple-600' },
     { href: '/export', label: 'CSV出力', icon: FaFileCsv, color: 'from-green-500 to-green-600' },
   ];
@@ -108,9 +109,12 @@ export default function HomePage() {
             押忍
           </h1>
           {userInfo && (
-            <p className="text-gray-600">
+            <button
+              className="text-gray-600 underline hover:text-blue-600 transition-colors"
+              onClick={() => router.push('/settings')}
+            >
               {userInfo.name} ({userInfo.age}歳 / {userInfo.grade})
-            </p>
+            </button>
           )}
         </div>
       </div>

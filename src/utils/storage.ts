@@ -30,22 +30,20 @@ export const calculateAge = (birthDate: string): number => {
 
 export const calculateGrade = (age: number): string => {
   if (age <= 6) return '幼稚園';
-  if (age <= 12) return `小学${age - 5}年生`;
-  if (age <= 15) return `中学${age - 11}年生`;
-  if (age <= 18) return `高校${age - 14}年生`;
-  if (age <= 22) return `大学${age - 17}年生`;
+  if (age <= 12) return `小学${Math.min(age - 5, 6)}年生`;
+  if (age <= 15) return `中学${Math.min(age - 11, 3)}年生`;
+  if (age <= 18) return `高校${Math.min(age - 14, 3)}年生`;
+  if (age <= 22) return `大学${Math.min(age - 17, 4)}年生`;
   return '一般';
 };
 
 // 対戦相手の管理
 export const saveOpponent = (opponentName: string): void => {
   if (!opponentName.trim()) return;
-  
-  const opponents = getOpponents();
-  if (!opponents.includes(opponentName)) {
-    opponents.push(opponentName);
-    localStorage.setItem(OPPONENTS_KEY, JSON.stringify(opponents));
-  }
+  let opponents = getOpponents().filter(o => o !== opponentName);
+  opponents.unshift(opponentName);
+  if (opponents.length > 20) opponents = opponents.slice(0, 20);
+  localStorage.setItem(OPPONENTS_KEY, JSON.stringify(opponents));
 };
 
 export const getOpponents = (): string[] => {
@@ -56,12 +54,10 @@ export const getOpponents = (): string[] => {
 // 大会名の管理
 export const saveTournament = (tournamentName: string): void => {
   if (!tournamentName.trim()) return;
-  
-  const tournaments = getTournaments();
-  if (!tournaments.includes(tournamentName)) {
-    tournaments.push(tournamentName);
-    localStorage.setItem(TOURNAMENTS_KEY, JSON.stringify(tournaments));
-  }
+  let tournaments = getTournaments().filter(t => t !== tournamentName);
+  tournaments.unshift(tournamentName);
+  if (tournaments.length > 20) tournaments = tournaments.slice(0, 20);
+  localStorage.setItem(TOURNAMENTS_KEY, JSON.stringify(tournaments));
 };
 
 export const getTournaments = (): string[] => {
@@ -113,17 +109,17 @@ export const deleteMatchRecord = (id: string): void => {
 
 export const exportToCSV = (): string => {
   const records = getAllMatchRecords();
-  const headers = ['試合ID', '試合日', '試合種別', '大会名', '対戦相手', '技の記録', '先取', '自分反則カテゴリ1', '自分反則カテゴリ2', '相手反則カテゴリ1', '相手反則カテゴリ2'];
+  const headers = ['試合ID', '試合日', '試合種別', '大会名', '対戦相手', '技の記録', '先取', '自分反則C1', '自分反則C2', '相手反則C1', '相手反則C2'];
   
   const rows = records.map(record => {
     const techniques = record.techniques.map(t => 
       `${t.area}${t.technique}${t.point}点${t.actor}`
     ).join('、');
     
-    const myCategory1 = record.penalties.filter(p => p.actor === '自分' && p.category === 'カテゴリ1').length;
-    const myCategory2 = record.penalties.filter(p => p.actor === '自分' && p.category === 'カテゴリ2').length;
-    const opponentCategory1 = record.penalties.filter(p => p.actor === '相手' && p.category === 'カテゴリ1').length;
-    const opponentCategory2 = record.penalties.filter(p => p.actor === '相手' && p.category === 'カテゴリ2').length;
+    const myCategory1 = record.penalties.filter(p => p.actor === '自分' && p.category === 'C1').length;
+    const myCategory2 = record.penalties.filter(p => p.actor === '自分' && p.category === 'C2').length;
+    const opponentCategory1 = record.penalties.filter(p => p.actor === '相手' && p.category === 'C1').length;
+    const opponentCategory2 = record.penalties.filter(p => p.actor === '相手' && p.category === 'C2').length;
     
     return [
       record.id,

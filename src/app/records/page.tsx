@@ -7,6 +7,20 @@ import { getAllMatchRecords, deleteMatchRecord } from '@/utils/storage';
 
 export default function RecordsPage() {
   const [records, setRecords] = useState<MatchRecord[]>([]);
+  const [isSwapped, setIsSwapped] = useState(false);
+
+  useEffect(() => {
+    const swapped = localStorage.getItem('karate_color_swapped');
+    setIsSwapped(swapped === 'true');
+  }, []);
+
+  const selfColor = isSwapped ? 'red' : 'blue';
+  const opponentColor = isSwapped ? 'blue' : 'red';
+  const getColor = (actor: '自分' | '相手', record: MatchRecord) => {
+    const selfColor = record.isSwapped ? 'red' : 'blue';
+    const opponentColor = record.isSwapped ? 'blue' : 'red';
+    return actor === '自分' ? selfColor : opponentColor;
+  };
 
   useEffect(() => {
     const loadRecords = () => {
@@ -81,13 +95,13 @@ export default function RecordsPage() {
 
             {/* スコア表示 */}
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="text-center p-3 bg-blue-50 rounded-xl">
-                <h4 className="text-sm font-medium text-blue-600">自分</h4>
-                <p className="text-2xl font-bold text-blue-700">{calculateScore(record, '自分')}</p>
+              <div className={`text-center p-3 bg-${getColor('自分', record)}-50 rounded-xl`}>
+                <h4 className={`text-sm font-medium text-${getColor('自分', record)}-600`}>自分</h4>
+                <p className={`text-2xl font-bold text-${getColor('自分', record)}-700`}>{calculateScore(record, '自分')}</p>
               </div>
-              <div className="text-center p-3 bg-red-50 rounded-xl">
-                <h4 className="text-sm font-medium text-red-600">相手</h4>
-                <p className="text-2xl font-bold text-red-700">{calculateScore(record, '相手')}</p>
+              <div className={`text-center p-3 bg-${getColor('相手', record)}-50 rounded-xl`}>
+                <h4 className={`text-sm font-medium text-${getColor('相手', record)}-600`}>相手</h4>
+                <p className={`text-2xl font-bold text-${getColor('相手', record)}-700`}>{calculateScore(record, '相手')}</p>
               </div>
             </div>
 
@@ -97,7 +111,7 @@ export default function RecordsPage() {
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {record.techniques.map((technique, index) => (
                   <div key={index} className="text-sm p-2 rounded bg-gray-50">
-                    <span className={technique.actor === '自分' ? 'text-blue-600' : 'text-red-600'}>
+                    <span className={`text-${getColor(technique.actor, record)}-600`}>
                       {technique.actor}
                     </span>
                     {' - '}

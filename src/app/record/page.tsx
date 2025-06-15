@@ -32,6 +32,12 @@ export default function RecordPage() {
     opponentName: '',
   });
   const [senshu, setSenshu] = useState<'自分' | '相手' | null>(null);
+  const [isSwapped, setIsSwapped] = useState(false);
+  const selfColor = isSwapped ? 'red' : 'blue';
+  const opponentColor = isSwapped ? 'blue' : 'red';
+
+  const recentTournaments = getTournaments().slice(0, 5);
+  const recentOpponents = getOpponents().slice(0, 5);
 
   useEffect(() => {
     const opponentList = getOpponents();
@@ -49,10 +55,12 @@ export default function RecordPage() {
     }
   }, [notification]);
 
-  // ページ移動時の自動保存
+  // ページ遷移時の警告と自動保存
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (techniques.length > 0) {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const selfScore = calculateScore('自分');
+      const opponentScore = calculateScore('相手');
+      if (selfScore > 0 || opponentScore > 0) {
         const matchRecord: MatchRecord = {
           id: Date.now().toString(),
           date: matchInfo.date,
@@ -62,17 +70,23 @@ export default function RecordPage() {
           techniques,
           penalties,
           senshu,
+          isSwapped,
         };
         saveMatchRecord(matchRecord);
+      } else if (techniques.length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
     };
-  }, [techniques, penalties, matchInfo, senshu]);
+  }, [techniques, penalties, matchInfo, senshu, isSwapped]);
+
+  useEffect(() => {
+    localStorage.setItem('karate_color_swapped', isSwapped.toString());
+  }, [isSwapped]);
 
   const resetTechniqueForm = () => {
     setCurrentTechnique({});
@@ -160,11 +174,12 @@ export default function RecordPage() {
   };
 
   const handleSave = () => {
-    if (techniques.filter(t => t.actor === '自分').length === 0) {
-      alert('自分の技を少なくとも1つ記録してください。');
+    const selfScore = calculateScore('自分');
+    const opponentScore = calculateScore('相手');
+    if (selfScore === 0 && opponentScore === 0) {
+      alert('自分または相手の技を少なくとも1つ記録してください。');
       return;
     }
-
     const matchRecord: MatchRecord = {
       id: Date.now().toString(),
       date: matchInfo.date,
@@ -174,8 +189,8 @@ export default function RecordPage() {
       techniques,
       penalties,
       senshu,
+      isSwapped,
     };
-
     saveMatchRecord(matchRecord);
     router.push('/records');
   };
@@ -188,33 +203,49 @@ export default function RecordPage() {
     return penalties.filter(p => p.actor === actor && p.category === category).length;
   };
 
+  // 色判定用関数
+  const getColor = (actor: '自分' | '相手') => {
+    if (actor === '自分') return selfColor;
+    return opponentColor;
+  };
+
+  // 色クラス取得
+  const getBtnClass = (actor: '自分' | '相手') =>
+    getColor(actor) === 'blue' ? 'btn-primary' : 'btn-danger';
+
   return (
     <div className="space-y-8 fade-in">
       {/* ヘッダー */}
-      <div className="glass-card p-6">
-        <div className="text-center">
+      <div className="glass-card p-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div className="text-center md:text-left">
           <div className="text-4xl mb-2">📝</div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             試合記録
           </h1>
         </div>
+        <button
+          className="mt-4 md:mt-0 btn-secondary px-6 py-2 text-base"
+          onClick={() => setIsSwapped((prev) => !prev)}
+        >
+          赤と青を入れ替える
+        </button>
       </div>
 
       {/* スコア表示 */}
       <div className="glass-card p-6">
         <div className="grid grid-cols-2 gap-6">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-blue-600 mb-2">自分</h3>
-            <div className="score-display">{calculateScore('自分')}</div>
+            <h3 className={`text-lg font-semibold text-${getColor('自分')}-600 mb-2`}>{isSwapped ? '自分（赤）' : '自分（青）'}</h3>
+            <div className={`score-display text-${getColor('自分')}-600`}>{calculateScore('自分')}</div>
             <div className="text-sm text-gray-600 mt-2">
-              反則: C1({getPenaltyCount('自分', 'カテゴリ1')}) C2({getPenaltyCount('自分', 'カテゴリ2')})
+              反則: C1({getPenaltyCount('自分', 'C1')}) C2({getPenaltyCount('自分', 'C2')})
             </div>
           </div>
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-red-600 mb-2">相手</h3>
-            <div className="score-display">{calculateScore('相手')}</div>
+            <h3 className={`text-lg font-semibold text-${getColor('相手')}-600 mb-2`}>{isSwapped ? '相手（青）' : '相手（赤）'}</h3>
+            <div className={`score-display text-${getColor('相手')}-600`}>{calculateScore('相手')}</div>
             <div className="text-sm text-gray-600 mt-2">
-              反則: C1({getPenaltyCount('相手', 'カテゴリ1')}) C2({getPenaltyCount('相手', 'カテゴリ2')})
+              反則: C1({getPenaltyCount('相手', 'C1')}) C2({getPenaltyCount('相手', 'C2')})
             </div>
           </div>
         </div>
@@ -230,13 +261,13 @@ export default function RecordPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => handleActorSelect('自分')}
-                className="btn-primary py-6 text-xl"
+                className={`${getBtnClass('自分')} py-6 text-xl`}
               >
                 自分
               </button>
               <button
                 onClick={() => handleActorSelect('相手')}
-                className="btn-danger py-6 text-xl"
+                className={`${getBtnClass('相手')} py-6 text-xl`}
               >
                 相手
               </button>
@@ -247,7 +278,7 @@ export default function RecordPage() {
         {recordStep === 'technique' && (
           <div className="space-y-4">
             <p className="text-center text-gray-600">
-              <span className={currentTechnique.actor === '自分' ? 'text-blue-600' : 'text-red-600'}>
+              <span className={getColor(currentTechnique.actor as '自分' | '相手') === 'blue' ? 'text-blue-600' : 'text-red-600'}>
                 {currentTechnique.actor}
               </span>
               の技の種類は？
@@ -337,13 +368,13 @@ export default function RecordPage() {
         <div className="grid grid-cols-3 gap-4">
           <button
             onClick={() => handleSenshuSelect('自分')}
-            className={`btn-primary py-6 text-xl ${senshu === '自分' ? 'ring-2 ring-blue-500' : ''}`}
+            className={`${getBtnClass('自分')} py-6 text-xl ${senshu === '自分' ? 'ring-2 ring-blue-500' : ''}`}
           >
             自分
           </button>
           <button
             onClick={() => handleSenshuSelect('相手')}
-            className={`btn-danger py-6 text-xl ${senshu === '相手' ? 'ring-2 ring-red-500' : ''}`}
+            className={`${getBtnClass('相手')} py-6 text-xl ${senshu === '相手' ? 'ring-2 ring-red-500' : ''}`}
           >
             相手
           </button>
@@ -362,36 +393,36 @@ export default function RecordPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h4 className="text-lg font-medium text-blue-600 mb-2">自分</h4>
+              <h4 className={`text-lg font-medium text-${getColor('自分')}-600 mb-2`}>自分</h4>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => handlePenaltyAdd('自分', 'カテゴリ1')}
+                  onClick={() => handlePenaltyAdd('自分', 'C1')}
                   className="btn-secondary"
                 >
-                  カテゴリ1
+                  C1
                 </button>
                 <button
-                  onClick={() => handlePenaltyAdd('自分', 'カテゴリ2')}
+                  onClick={() => handlePenaltyAdd('自分', 'C2')}
                   className="btn-secondary"
                 >
-                  カテゴリ2
+                  C2
                 </button>
               </div>
             </div>
             <div>
-              <h4 className="text-lg font-medium text-red-600 mb-2">相手</h4>
+              <h4 className={`text-lg font-medium text-${getColor('相手')}-600 mb-2`}>相手</h4>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => handlePenaltyAdd('相手', 'カテゴリ1')}
+                  onClick={() => handlePenaltyAdd('相手', 'C1')}
                   className="btn-secondary"
                 >
-                  カテゴリ1
+                  C1
                 </button>
                 <button
-                  onClick={() => handlePenaltyAdd('相手', 'カテゴリ2')}
+                  onClick={() => handlePenaltyAdd('相手', 'C2')}
                   className="btn-secondary"
                 >
-                  カテゴリ2
+                  C2
                 </button>
               </div>
             </div>
@@ -404,14 +435,14 @@ export default function RecordPage() {
         <h3 className="text-xl font-semibold mb-4">記録済み</h3>
         <div className="space-y-6">
           <div>
-            <h4 className="text-lg font-medium text-blue-600 mb-2">自分の技</h4>
+            <h4 className={`text-lg font-medium text-${getColor('自分')}-600 mb-2`}>自分の技</h4>
             <div className="space-y-2">
               {techniques
                 .filter(t => t.actor === '自分')
                 .map((t, index) => (
                   <div key={index} className="technique-card flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                     <div className="flex items-center space-x-3">
-                      <span className="text-blue-600 font-medium">{t.area}{t.technique}</span>
+                      <span className={`font-medium text-${getColor('自分')}-600`}>{t.area}{t.technique}</span>
                       <span className="text-lg font-bold">{t.point}点</span>
                     </div>
                     <button
@@ -425,7 +456,7 @@ export default function RecordPage() {
               {senshu === '自分' && (
                 <div className="technique-card flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                   <div className="flex items-center space-x-3">
-                    <span className="text-blue-600 font-medium">先取</span>
+                    <span className={`font-medium text-${getColor('自分')}-600`}>先取</span>
                     <span className="text-lg font-bold">0.1点</span>
                   </div>
                   <button
@@ -439,14 +470,14 @@ export default function RecordPage() {
             </div>
           </div>
           <div>
-            <h4 className="text-lg font-medium text-red-600 mb-2">相手の技</h4>
+            <h4 className={`text-lg font-medium text-${getColor('相手')}-600 mb-2`}>相手の技</h4>
             <div className="space-y-2">
               {techniques
                 .filter(t => t.actor === '相手')
                 .map((t, index) => (
                   <div key={index} className="technique-card flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                     <div className="flex items-center space-x-3">
-                      <span className="text-red-600 font-medium">{t.area}{t.technique}</span>
+                      <span className={`font-medium text-${getColor('相手')}-600`}>{t.area}{t.technique}</span>
                       <span className="text-lg font-bold">{t.point}点</span>
                     </div>
                     <button
@@ -460,7 +491,7 @@ export default function RecordPage() {
               {senshu === '相手' && (
                 <div className="technique-card flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                   <div className="flex items-center space-x-3">
-                    <span className="text-red-600 font-medium">先取</span>
+                    <span className={`font-medium text-${getColor('相手')}-600`}>先取</span>
                     <span className="text-lg font-bold">0.1点</span>
                   </div>
                   <button
@@ -479,7 +510,7 @@ export default function RecordPage() {
               {penalties.map((p, index) => (
                 <div key={index} className="technique-card flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                   <div className="flex items-center space-x-3">
-                    <span className={`font-medium ${p.actor === '自分' ? 'text-blue-600' : 'text-red-600'}`}>
+                    <span className={`font-medium text-${getColor(p.actor)}-600`}>
                       {p.actor} - {p.category}
                     </span>
                   </div>
@@ -502,14 +533,22 @@ export default function RecordPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">試合種別</label>
-            <select
-              className="select-field"
-              value={matchInfo.matchType}
-              onChange={(e) => setMatchInfo({ ...matchInfo, matchType: e.target.value as MatchType })}
-            >
-              <option value="練習">練習</option>
-              <option value="大会">大会</option>
-            </select>
+            <div className="flex gap-4 mb-2">
+              <button
+                type="button"
+                className={`btn-secondary px-4 py-2 ${matchInfo.matchType === '練習' ? 'ring-2 ring-blue-500' : ''}`}
+                onClick={() => setMatchInfo({ ...matchInfo, matchType: '練習' })}
+              >
+                練習
+              </button>
+              <button
+                type="button"
+                className={`btn-secondary px-4 py-2 ${matchInfo.matchType === '大会' ? 'ring-2 ring-purple-500' : ''}`}
+                onClick={() => setMatchInfo({ ...matchInfo, matchType: '大会' })}
+              >
+                大会
+              </button>
+            </div>
           </div>
 
           <div>
@@ -537,6 +576,11 @@ export default function RecordPage() {
                 <option key={index} value={tournament} />
               ))}
             </datalist>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {recentTournaments.map((name, idx) => (
+                <button key={idx} type="button" className="btn-secondary px-3 py-1 text-sm" onClick={() => setMatchInfo({ ...matchInfo, tournamentName: name })}>{name}</button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -554,21 +598,27 @@ export default function RecordPage() {
                 <option key={index} value={opponent} />
               ))}
             </datalist>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {recentOpponents.map((name, idx) => (
+                <button key={idx} type="button" className="btn-secondary px-3 py-1 text-sm" onClick={() => setMatchInfo({ ...matchInfo, opponentName: name })}>{name}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* 通知 */}
       {notification && (
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white shadow-xl rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 shadow-xl rounded-lg p-6 max-w-md w-full mx-4">
           <div className="relative">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white rotate-45"></div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="rounded-lg p-4 border border-gray-200"
+              style={{ backgroundColor: notification.data && (notification.data as any).actor === '自分' ? (selfColor === 'blue' ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)') : (notification.data && (notification.data as any).actor === '相手' ? (opponentColor === 'blue' ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)') : 'rgba(107,114,128,0.7)' ) }}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-lg font-medium">{notification.message}</span>
+                <span className="text-lg font-medium text-white">{notification.message}</span>
                 <button
                   onClick={handleUndo}
-                  className="text-red-600 hover:text-red-800 font-medium px-4 py-2 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  className="text-white hover:text-gray-200 font-medium px-4 py-2 border border-white rounded-lg hover:bg-white/20 transition-colors"
                 >
                   取消
                 </button>

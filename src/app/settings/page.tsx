@@ -12,6 +12,7 @@ export default function SettingsPage() {
     name: '',
     birthDate: '',
   });
+  const [showSaved, setShowSaved] = useState(false);
 
   useEffect(() => {
     const info = getUserInfo();
@@ -27,21 +28,18 @@ export default function SettingsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.birthDate) return;
-
     const age = calculateAge(formData.birthDate);
     const grade = calculateGrade(age);
-    
     const updatedUserInfo: UserInfo = {
       name: formData.name,
       birthDate: formData.birthDate,
       age,
       grade,
     };
-
     saveUserInfo(updatedUserInfo);
     setUserInfo(updatedUserInfo);
-    alert('設定を更新しました！');
-    router.push('/');
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 2000);
   };
 
   return (
@@ -104,6 +102,10 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+
+        {showSaved && (
+          <div className="mt-4 text-green-600 font-bold text-center">設定を保存しました</div>
+        )}
       </div>
     </div>
   );

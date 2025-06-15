@@ -1,7 +1,7 @@
 export type TechniqueType = '突き' | '蹴り' | 'こかし';
 export type TargetArea = '上段' | '中段';
 export type Point = 1 | 2 | 3;
-export type PenaltyCategory = 'カテゴリ1' | 'カテゴリ2';
+export type PenaltyCategory = 'C1' | 'C2';
 export type MatchType = '練習' | '大会';
 
 export interface UserInfo {
@@ -41,4 +41,5 @@ export interface MatchRecord {
   techniques: TechniqueRecord[];
   penalties: PenaltyRecord[];
   senshu: '自分' | '相手' | null;
+  isSwapped?: boolean;
 } 
