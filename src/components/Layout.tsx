@@ -18,10 +18,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const menuItems = [
-    { href: '/', label: 'ホーム', icon: FaHome },
-    { href: '/record', label: '記録', icon: FaClipboardList },
-    { href: '/analysis', label: '分析', icon: FaChartBar },
-    { href: '/export', label: 'CSV', icon: FaFileCsv },
+    { href: '.', label: 'ホーム', icon: FaHome },
+    { href: './record', label: '記録', icon: FaClipboardList },
+    { href: './analysis', label: '分析', icon: FaChartBar },
+    { href: './export', label: 'CSV', icon: FaFileCsv },
   ];
 
   return (
@@ -47,7 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* フッター */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-sm z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <Link href="." className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             空手道記録&分析
           </Link>
           <button

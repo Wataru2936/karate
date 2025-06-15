@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <base href="/karate/" />
+        <link rel="icon" href="favicon.ico" />
       </head>
       <body>
         <Layout>
