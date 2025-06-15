@@ -36,14 +36,19 @@ export default function RecordPage() {
   const selfColor = isSwapped ? 'red' : 'blue';
   const opponentColor = isSwapped ? 'blue' : 'red';
 
-  const recentTournaments = getTournaments().slice(0, 5);
-  const recentOpponents = getOpponents().slice(0, 5);
+  const [recentTournaments, setRecentTournaments] = useState<string[]>([]);
+  const [recentOpponents, setRecentOpponents] = useState<string[]>([]);
 
   useEffect(() => {
     const opponentList = getOpponents();
     const tournamentList = getTournaments();
     setOpponents(opponentList);
     setTournaments(tournamentList);
+  }, []);
+
+  useEffect(() => {
+    setRecentTournaments(getTournaments().slice(0, 5));
+    setRecentOpponents(getOpponents().slice(0, 5));
   }, []);
 
   useEffect(() => {
