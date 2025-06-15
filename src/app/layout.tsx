@@ -14,6 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <head>
+        <base href="/karate/" />
+      </head>
       <body>
         <Layout>
           {children}
