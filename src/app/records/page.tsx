@@ -42,7 +42,7 @@ export default function RecordsPage() {
 
       {/* 新規記録ボタン */}
       <div className="flex justify-center">
-        <Link href="./record" className="btn-primary px-8 py-4 text-lg">
+        <Link href="/record" className="btn-primary px-8 py-4 text-lg">
           ➕ 新規記録
         </Link>
       </div>
@@ -65,7 +65,7 @@ export default function RecordsPage() {
               </div>
               <div className="flex space-x-2">
                 <Link
-                  href={`./record/${record.id}`}
+                  href={`/record/${record.id}`}
                   className="btn-secondary px-4 py-2 text-sm"
                 >
                   編集
@@ -123,7 +123,7 @@ export default function RecordsPage() {
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">記録がありません</h3>
             <p className="text-gray-500 mb-6">新規記録を追加してください</p>
-            <Link href="./record" className="btn-primary">
+            <Link href="/record" className="btn-primary">
               最初の記録を追加
             </Link>
           </div>
